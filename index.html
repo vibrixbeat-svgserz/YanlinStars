@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Янлин</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="/socket.io/socket.io.js" onerror="window.__noSocket=true"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07070c;
+      --surface: #111118;
+      --surface2: #1a1a24;
+      --surface3: #22222e;
+      --border: rgba(255,255,255,0.08);
+      --text: #ffffff;
+      --muted: #8b8b9e;
+      --primary: #8b5cf6;
+      --primary2: #a78bfa;
+      --accent: #fbbf24;
+      --success: #34d399;
+      --danger: #f87171;
+      --pink: #ec4899;
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      background: radial-gradient(ellipse at top, #12121f 0%, #07070c 60%);
+      position: relative;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(10,10,16,0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .logo-text .name { font-weight: 700; font-size: 17px; letter-spacing: -0.3px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .online-badge {
+      display: flex; align-items: center; gap: 5px;
+      background: var(--surface2);
+      padding: 5px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border);
+    }
+    .online-badge .dot {
+      width: 7px; height: 7px; background: var(--success);
+      border-radius: 50%; box-shadow: 0 0 8px var(--success);
+      animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50% { opacity:0.5; transform:scale(0.8); }
+    }
+    .balance { display: flex; gap: 6px; }
+    .bal-item {
+      background: var(--surface2);
+      padding: 5px 10px; border-radius: 12px;
+      font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 5px;
+      border: 1px solid var(--border);
+    }
+    .bal-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+    .main {
+      flex: 1;
+      padding: 14px 14px 100px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .page { display: none; animation: fadeUp 0.28s ease; }
+    .page.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(12px); }
+      to { opacity:1; transform: translateY(0); }
+    }
+    .page-title {
+      font-size: 22px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .page-title svg { width: 26px; height: 26px; }
+    .hint { color: var(--muted); font-size: 13px; margin-bottom: 18px; line-height: 1.4; }
+    .hero { text-align: center; padding: 18px 0 22px; }
+    .avatar-wrap {
+      width: 86px; height: 86px; margin: 0 auto 12px;
+      border-radius: 50%; overflow: hidden;
+      border: 3px solid transparent;
+      background: linear-gradient(var(--bg),var(--bg)) padding-box,
+                  linear-gradient(135deg,#8b5cf6,#ec4899) border-box;
+      box-shadow: 0 0 0 5px rgba(139,92,246,0.15), 0 8px 30px rgba(0,0,0,0.4);
+      position: relative;
+    }
+    .avatar-wrap img { width:100%; height:100%; object-fit:cover; display:block; }
+    .avatar-placeholder {
+      width:100%; height:100%; background: var(--surface2);
+      display:flex; align-items:center; justify-content:center;
+      font-size: 34px; font-weight:800; color: var(--muted);
+    }
+    .hero h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+    .subtitle { color: var(--muted); font-size: 13px; margin-top: 3px; }
+    .grid-actions {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 26px;
+    }
+    .action-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      cursor: pointer; transition: all 0.2s; color: var(--text);
+      font-weight: 600; font-size: 13px;
+    }
+    .action-card:active {
+      transform: scale(0.96);
+      border-color: rgba(139,92,246,0.5);
+      background: var(--surface2);
+    }
+    .action-icon {
+      width: 54px; height: 54px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(145deg, rgba(139,92,246,0.22), rgba(236,72,153,0.1));
+      border-radius: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .action-icon svg { width: 26px; height: 26px; }
+    .action-icon.spin svg { animation: slowSpin 5s linear infinite; }
+    @keyframes slowSpin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+    .btn {
+      border: none; border-radius: 14px; padding: 13px 20px;
+      font-weight: 700; font-size: 15px; cursor: pointer;
+      transition: all 0.15s; font-family: inherit; color: #fff;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn.primary {
+      background: linear-gradient(135deg, #8b5cf6, #a855f7);
+      box-shadow: 0 4px 18px rgba(139,92,246,0.4);
+    }
+    .btn.primary:active { transform: scale(0.97); filter: brightness(1.08); }
+    .btn.secondary {
+      background: var(--surface2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn.small { padding: 9px 14px; font-size: 13px; border-radius: 11px; }
+    .btn.big { width: 100%; padding: 16px; font-size: 16px; margin-top: 14px; }
+    .btn:disabled { opacity: 0.45; pointer-events: none; }
+    .btn svg { width: 18px; height: 18px; }
+    .roulette-container { text-align: center; padding: 8px 0 20px; }
+    .roulette-wheel {
+      width: 260px; height: 260px; margin: 0 auto 18px;
+      position: relative; border-radius: 50%;
+      background: conic-gradient(
+        #4b5563 0deg 36deg, #3b82f6 36deg 72deg, #2563eb 72deg 108deg,
+        #1d4ed8 108deg 144deg, #f59e0b 144deg 180deg, #d97706 180deg 216deg,
+        #b45309 216deg 252deg, #ec4899 252deg 288deg, #a855f7 288deg 324deg,
+        #ef4444 324deg 360deg
+      );
+      box-shadow: 0 0 0 6px #1a1a24, 0 0 0 10px rgba(139,92,246,0.25), 0 12px 40px rgba(0,0,0,0.5);
+      transition: transform 4.2s cubic-bezier(0.12, 0.8, 0.2, 1);
+    }
+    .roulette-wheel::after {
+      content: ''; position: absolute; inset: 18%;
+      background: radial-gradient(circle, #111118 60%, #1a1a24);
+      border-radius: 50%;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+    }
+    .pointer {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 16px solid var(--accent);
+      z-index: 5;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.6));
+    }
+    .prize-result {
+      min-height: 36px; font-size: 20px; font-weight: 800;
+      margin: 10px 0; color: var(--accent); opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .prize-result.show { opacity: 1; animation: pop 0.45s ease; }
+    @keyframes pop {
+      0% { transform: scale(0.6); } 60% { transform: scale(1.12); } 100% { transform: scale(1); }
+    }
+    .shop-grid { display: grid; gap: 10px; }
+    .shop-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: border-color 0.2s;
+    }
+    .shop-card:active { border-color: rgba(139,92,246,0.5); }
+    .shop-info h3 { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+    .shop-info p { color: var(--muted); font-size: 12px; }
+    .shop-price {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #111; padding: 9px 14px; border-radius: 11px;
+      font-weight: 800; font-size: 13px; border: none; cursor: pointer;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .raffles-list { margin-top: 14px; display: flex; flex-direction: column; gap: 12px; }
+    .raffle-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .raffle-card img { width: 100%; height: 150px; object-fit: cover; background: var(--surface2); }
+    .raffle-body { padding: 14px; }
+    .raffle-body h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+    .raffle-body p { color: var(--muted); font-size: 13px; margin-bottom: 10px; }
+    .raffle-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+    .raffle-enter { display: flex; gap: 8px; }
+    .raffle-enter input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 11px; padding: 10px 12px; color: var(--text); font-size: 14px;
+    }
+    .profile-card {
+      background: var(--surface); border-radius: var(--radius);
+      border: 1px solid var(--border); margin-bottom: 20px; overflow: hidden;
+    }
+    .profile-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; border-bottom: 1px solid var(--border); font-size: 14px;
+    }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-row span { color: var(--muted); }
+    .profile-row strong { font-weight: 700; }
+    .section { margin-bottom: 22px; }
+    .section h3 { font-size: 13px; margin-bottom: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .ref-box, .promo-box, .withdraw-box { display: flex; gap: 8px; }
+    .ref-box input, .promo-box input, .withdraw-box input {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; color: var(--text); font-size: 14px;
+    }
+    .history-list, .wins-list { display: flex; flex-direction: column; gap: 8px; }
+    .history-item, .win-item {
+      background: var(--surface); border-radius: 12px; padding: 12px 14px;
+      font-size: 13px; display: flex; justify-content: space-between; align-items: center;
+      border: 1px solid var(--border);
+    }
+    .empty { color: var(--muted); text-align: center; padding: 24px 10px; font-size: 14px; }
+    .chat-messages {
+      height: calc(100vh - 280px); min-height: 280px; overflow-y: auto;
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 4px 0;
+    }
+    .chat-msg {
+      background: var(--surface); border-radius: 14px; padding: 10px 14px;
+      max-width: 85%; font-size: 14px; border: 1px solid var(--border);
+      align-self: flex-start;
+    }
+    .chat-msg .author { font-weight: 700; color: var(--primary2); font-size: 12px; margin-bottom: 2px; }
+    .chat-input { display: flex; gap: 8px; }
+    .chat-input input {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 12px 16px; color: var(--text); font-size: 15px;
+    }
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 100%; max-width: 480px;
+      display: flex; background: rgba(10,10,16,0.94);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border-top: 1px solid var(--border);
+      padding: 6px 2px calc(6px + env(safe-area-inset-bottom));
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1; background: none; border: none; color: var(--muted);
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 6px 0; cursor: pointer; transition: color 0.15s;
+    }
+    .nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; }
+    .nav-btn small { font-size: 10px; font-weight: 600; }
+    .nav-btn.active { color: var(--primary2); }
+    .nav-btn.active svg { stroke: var(--primary2); }
+    .modal {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      z-index: 200; align-items: flex-end; justify-content: center;
+      padding: 0; backdrop-filter: blur(6px);
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: var(--surface); border-radius: 24px 24px 0 0;
+      padding: 22px 18px calc(22px + env(safe-area-inset-bottom));
+      width: 100%; max-width: 480px; border: 1px solid var(--border);
+      border-bottom: none; animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp { from{transform:translateY(40px);opacity:0} to{transform:none;opacity:1} }
+    .modal-content h3 { margin-bottom: 14px; font-size: 18px; }
+    .modal-content input, .modal-content textarea {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 14px; color: var(--text);
+      margin-bottom: 10px; font-size: 14px; font-family: inherit;
+    }
+    .modal-content textarea { min-height: 80px; resize: vertical; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 8px; }
+    .modal-actions .btn { flex: 1; }
+    #adminLoginForm { display: flex; flex-direction: column; gap: 10px; max-width: 300px; margin: 24px auto; }
+    #adminLoginForm input {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 13px; color: var(--text); font-size: 15px;
+    }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .stat-card {
+      background: var(--surface); border-radius: 14px; padding: 14px;
+      text-align: center; border: 1px solid var(--border);
+    }
+    .stat-card .val { font-size: 22px; font-weight: 800; color: var(--primary2); }
+    .stat-card .lbl { font-size: 11px; color: var(--muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .admin-tabs { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+    .admin-tabs .tab {
+      background: var(--surface2); border: none; color: var(--muted);
+      padding: 8px 14px; border-radius: 11px; font-size: 12px; font-weight: 600;
+      cursor: pointer; white-space: nowrap;
+    }
+    .admin-tabs .tab.active { background: var(--primary); color: #fff; }
+    .toast {
+      position: fixed; top: 70px; left: 50%; transform: translateX(-50%) translateY(-16px);
+      background: var(--surface3); color: var(--text); padding: 12px 18px;
+      border-radius: 14px; font-size: 14px; font-weight: 600;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5); opacity: 0;
+      transition: all 0.28s; z-index: 300; border: 1px solid var(--border);
+      pointer-events: none; max-width: 90%;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: rgba(52,211,153,0.4); }
+    .toast.error { border-color: rgba(248,113,113,0.4); }
+  
+    /* ===== PREMIUM ANIMATIONS ===== */
+    .hero { animation: heroIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes heroIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.96); }
+      to { opacity: 1; transform: none; }
+    }
+    .avatar-wrap {
+      animation: avatarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+    }
+    @keyframes avatarPop {
+      from { opacity: 0; transform: scale(0.5); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .grid-actions .action-card {
+      animation: cardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .grid-actions .action-card:nth-child(1) { animation-delay: 0.08s; }
+    .grid-actions .action-card:nth-child(2) { animation-delay: 0.14s; }
+    .grid-actions .action-card:nth-child(3) { animation-delay: 0.20s; }
+    .grid-actions .action-card:nth-child(4) { animation-delay: 0.26s; }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(18px) scale(0.94); }
+      to { opacity: 1; transform: none; }
+    }
+    .action-card:active .action-icon {
+      transform: scale(0.9);
+      transition: transform 0.15s;
+    }
+    .bal-item {
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .bal-item.pulse {
+      animation: balPulse 0.45s ease;
+    }
+    @keyframes balPulse {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.12); box-shadow: 0 0 12px rgba(167,139,250,0.4); }
+      100% { transform: scale(1); }
+    }
+    .section {
+      animation: fadeUp 0.45s ease 0.3s both;
+    }
+    .roulette-wheel {
+      animation: wheelAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes wheelAppear {
+      from { opacity: 0; transform: scale(0.7) rotate(-30deg); }
+      to { opacity: 1; transform: scale(1) rotate(0); }
+    }
+    .shop-card, .raffle-card, .history-item, .win-item {
+      animation: itemIn 0.4s ease both;
+    }
+    @keyframes itemIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: none; }
+    }
+    .bottom-nav .nav-btn {
+      transition: color 0.2s, transform 0.15s;
+    }
+    .bottom-nav .nav-btn:active {
+      transform: scale(0.88);
+    }
+    .bottom-nav .nav-btn.active svg {
+      filter: drop-shadow(0 0 6px rgba(167,139,250,0.5));
+    }
+    /* Loading skeleton for avatar */
+    .avatar-placeholder.loading {
+      background: linear-gradient(90deg, #1a1a24 25%, #2a2a3a 50%, #1a1a24 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .username-tag {
+      display: inline-block;
+      background: rgba(139,92,246,0.15);
+      color: #a78bfa;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-top: 6px;
+      border: 1px solid rgba(139,92,246,0.25);
+    }
+
+    /* ========== CLEAN PREMIUM SPLASH ========== */
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #06060b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: opacity 0.55s ease, visibility 0.55s;
+      /* Hard fallback: auto-hide even if JS fails */
+      animation: splashAutoHide 0.01s 2.8s forwards;
+    }
+    @keyframes splashAutoHide {
+      to { opacity: 0; visibility: hidden; pointer-events: none; }
+    }
+    #splash.hide {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+      animation: none !important;
+    }
+    #app {
+      opacity: 0;
+      transition: opacity 0.45s ease;
+      animation: appAutoShow 0.01s 2.85s forwards;
+    }
+    @keyframes appAutoShow {
+      to { opacity: 1; }
+    }
+    #app.ready {
+      opacity: 1 !important;
+      animation: none !important;
+    }
+    .splash-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 55% at 50% 40%, rgba(139,92,246,0.14) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 45% at 50% 75%, rgba(99,102,241,0.07) 0%, transparent 50%);
+    }
+    .splash-mark {
+      width: 88px;
+      height: 88px;
+      position: relative;
+      z-index: 2;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .splash-mark-inner {
+      width: 72px;
+      height: 72px;
+      border-radius: 22px;
+      background: linear-gradient(145deg, #1a1430 0%, #2a1f4e 50%, #1e1638 100%);
+      border: 1px solid rgba(167,139,250,0.35);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04) inset,
+        0 8px 32px rgba(139,92,246,0.25),
+        0 0 48px rgba(139,92,246,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 34px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -1px;
+      animation: markPulse 2.4s ease-in-out infinite;
+      position: relative;
+      overflow: hidden;
+    }
+    .splash-mark-inner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 50%, transparent 100%);
+      pointer-events: none;
+    }
+    .splash-mark-inner span {
+      background: linear-gradient(135deg, #e9d5ff 0%, #a78bfa 40%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 1;
+    }
+    @keyframes markPulse {
+      0%,100% { transform: scale(1); box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 8px 32px rgba(139,92,246,0.25), 0 0 48px rgba(139,92,246,0.12); }
+      50% { transform: scale(1.035); box-shadow: 0 0 0 1px rgba(255,255,255,0.06) inset, 0 10px 40px rgba(139,92,246,0.35), 0 0 60px rgba(139,92,246,0.18); }
+    }
+    .splash-orbit {
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 1.5px solid transparent;
+      border-top-color: rgba(167,139,250,0.55);
+      border-right-color: rgba(167,139,250,0.15);
+      animation: orbitSpin 1.1s linear infinite;
+    }
+    @keyframes orbitSpin {
+      to { transform: rotate(360deg); }
+    }
+    .splash-title {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      color: #fff;
+      margin-bottom: 6px;
+      z-index: 2;
+      position: relative;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.15s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    .splash-sub {
+      color: rgba(255,255,255,0.4);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      margin-bottom: 36px;
+      z-index: 2;
+      position: relative;
+      opacity: 0;
+      animation: fadeUp 0.7s 0.28s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .splash-progress {
+      width: 100px;
+      height: 2px;
+      background: rgba(255,255,255,0.07);
+      border-radius: 2px;
+      overflow: hidden;
+      z-index: 2;
+      position: relative;
+      opacity: 0;
+      animation: fadeUp 0.5s 0.4s forwards;
+    }
+    .splash-progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7c3aed, #a78bfa);
+      border-radius: 2px;
+      animation: progressFill 1.55s 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    @keyframes progressFill {
+      0% { width: 0%; }
+      100% { width: 100%; }
+    }
+
+    /* Header logo */
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #16122a 0%, #241b40 100%);
+      border: 1px solid rgba(167,139,250,0.3);
+      box-shadow: 0 2px 12px rgba(139,92,246,0.2), inset 0 1px 0 rgba(255,255,255,0.05);
+      transition: transform 0.15s ease;
+      overflow: hidden;
+      font-weight: 800;
+      font-size: 18px;
+      color: #c4b5fd;
+      letter-spacing: -0.5px;
+    }
+    .logo-wrap:active .logo { transform: scale(0.92); }
+
+    /* Daily bonus card */
+    /* Tasks */
+    .tasks-toolbar { padding: 0 14px 12px; }
+    .tasks-toolbar .btn { width: 100%; }
+    .tasks-list { padding: 0 14px 20px; display: flex; flex-direction: column; gap: 10px; }
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .task-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+    .task-card h4 { font-size: 15px; font-weight: 700; margin: 0 0 4px; }
+    .task-card .task-meta { font-size: 12px; color: var(--muted); }
+    .task-type-badge {
+      font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px;
+      background: rgba(139,92,246,0.15); color: #c4b5fd; white-space: nowrap;
+    }
+    .task-reward {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-weight: 800; font-size: 14px; color: #a78bfa; margin: 8px 0;
+    }
+    .task-progress { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .task-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .task-actions .btn { flex: 1; min-width: 90px; }
+    .task-done { opacity: 0.65; }
+    .task-done .task-type-badge { background: rgba(52,211,153,0.15); color: #34d399; }
+    #taskModal select, #taskModal input, #taskModal textarea {
+      width: 100%; margin-bottom: 8px; padding: 11px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--surface2); color: var(--text);
+      font-family: inherit; font-size: 14px;
+    }
+    #taskModal textarea { min-height: 70px; resize: vertical; }
+
+    /* Daily Bonus — new design */
+    .daily-bonus-card {
+      margin: 0 14px 18px;
+      border-radius: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      position: relative;
+    }
+    .daily-bonus-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px 10px;
+      background: linear-gradient(180deg, rgba(139,92,246,0.12) 0%, transparent 100%);
+    }
+    .daily-bonus-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .daily-bonus-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: rgba(139,92,246,0.15);
+      border: 1px solid rgba(139,92,246,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .daily-bonus-badge svg {
+      width: 22px;
+      height: 22px;
+    }
+    .daily-bonus-label h3 {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 1px;
+    }
+    .daily-bonus-label span {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .daily-bonus-amount {
+      text-align: right;
+    }
+    .daily-bonus-amount strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      color: #c4b5fd;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .daily-bonus-bottom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px 14px;
+    }
+    .daily-timer-box {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .daily-timer-box .clock {
+      width: 18px;
+      height: 18px;
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+    .daily-timer {
+      font-size: 14px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #a78bfa;
+      letter-spacing: 0.3px;
+    }
+    .daily-btn {
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(139,92,246,0.35);
+      transition: transform 0.15s, opacity 0.2s, box-shadow 0.2s;
+      white-space: nowrap;
+      min-width: 100px;
+    }
+    .daily-btn:active { transform: scale(0.96); }
+    .daily-btn:disabled {
+      background: var(--surface3);
+      color: var(--muted);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+    .daily-btn.claimable {
+      animation: claimPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes claimPulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(139,92,246,0.35); }
+      50% { box-shadow: 0 4px 24px rgba(139,92,246,0.55); }
+    }
+
+  </style>
+</head>
+<body>
+  <!-- CLEAN PREMIUM SPLASH -->
+  <div id="splash">
+    <div class="splash-bg"></div>
+    <div class="splash-mark">
+      <div class="splash-orbit"></div>
+      <div class="splash-mark-inner"><span>Я</span></div>
+    </div>
+    <div class="splash-title">Янлин</div>
+    <div class="splash-sub">Telegram Mini App</div>
+    <div class="splash-progress"><div class="splash-progress-bar"></div></div>
+  </div>
+
+  <div id="app">
+    <header class="header">
+      <div class="logo-wrap" id="logoTap">
+        <div class="logo">Я</div>
+        <div class="logo-text">
+          <span class="name">Янлин</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="online-badge" id="onlineBadge">
+          <span class="dot"></span>
+          <span id="onlineCount">0</span>
+        </div>
+        <div class="balance">
+          <div class="bal-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span id="starsBal">0</span>
+          </div>
+          <div class="bal-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 15h2"/><path d="M11 15h2"/></svg>
+            <span id="ticketsBal">0</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="main" id="mainContent">
+      <section class="page active" id="page-home">
+        <div class="hero">
+          <div class="avatar-wrap" id="userAvatar">
+            <img id="avatarImg" src="" alt="" style="display:none" />
+            <div class="avatar-placeholder" id="avatarPlaceholder">?</div>
+          </div>
+          <h1 id="userName">…</h1>
+          <div id="userTag" class="username-tag" style="display:none"></div>
+          <p class="subtitle" id="welcomeText">Добро пожаловать в Янлин</p>
+        </div>
+
+        <!-- Daily Bonus — new card -->
+        <div class="daily-bonus-card" id="dailyBonusCard">
+          <div class="daily-bonus-top">
+            <div class="daily-bonus-label">
+              <div class="daily-bonus-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="8" width="18" height="13" rx="2"/>
+                  <path d="M12 8v13"/>
+                  <path d="M3 12h18"/>
+                  <path d="M12 8c-1.5-2.5-3.5-3.5-5-2.5S5 8 5 8h14s-.5-2.5-2-3.5S13.5 5.5 12 8z"/>
+                </svg>
+              </div>
+              <div>
+                <h3>Ежедневный бонус</h3>
+                <span>Обновляется каждые 24ч</span>
+              </div>
+            </div>
+            <div class="daily-bonus-amount">
+              <strong>RANDOM</strong>
+            </div>
+          </div>
+          <div class="daily-bonus-bottom">
+            <div class="daily-timer-box">
+              <svg class="clock" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+              <div class="daily-timer" id="dailyTimer">Загрузка...</div>
+            </div>
+            <button class="daily-btn" id="dailyClaimBtn" disabled>Забрать</button>
+          </div>
+        </div>
+
+        <div class="grid-actions">
+          <button class="action-card" data-page="tasks">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            </div>
+            <span>Задания</span>
+          </button>
+          <button class="action-card" data-page="shop">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            </div>
+            <span>Магазин</span>
+          </button>
+          <button class="action-card" data-page="raffles">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="1.8"><path d="M20 12v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8"/><path d="M12 2v10"/><path d="M12 12l-4-4"/><path d="M12 12l4-4"/><path d="M2 7h20"/></svg>
+            </div>
+            <span>Розыгрыши</span>
+          </button>
+          <button class="action-card" data-page="profile">
+            <div class="action-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span>Профиль</span>
+          </button>
+        </div>
+        <div class="section">
+          <h3 style="margin-bottom:10px">Последние выигрыши</h3>
+          <div id="recentWins" class="wins-list">
+            <div class="empty">Пока нет выигрышей</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="page" id="page-tasks">
+        <h2 class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+          Задания
+        </h2>
+        <p class="hint">Выполняй задания и получай билеты / Stars. Создавай свои — награда резервируется с баланса.</p>
+        <div class="tasks-toolbar">
+          <button class="btn primary" id="openCreateTask">+ Создать задание</button>
+        </div>
+        <div id="tasksList" class="tasks-list"></div>
+      </section>
+
+      <section class="page" id="page-shop">
+        <h2 class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+          Магазин
+        </h2>
+        <p class="hint">Оплата настоящими Telegram Stars (XTR)</p>
+        <div class="shop-grid" id="shopGrid"></div>
+      </section>
+
+      <section class="page" id="page-raffles">
+        <h2 class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="1.8"><path d="M20 12v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8"/><path d="M12 2v10"/><path d="M12 12l-4-4"/><path d="M12 12l4-4"/><path d="M2 7h20"/></svg>
+          Розыгрыши
+        </h2>
+        <button class="btn secondary" id="createRaffleBtn" style="width:100%;margin-bottom:14px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg>
+          Выставить подарок / NFT
+        </button>
+        <div id="rafflesList" class="raffles-list"></div>
+      </section>
+
+      <section class="page" id="page-profile">
+        <h2 class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Профиль
+        </h2>
+        <div class="profile-card">
+          <div class="profile-row"><span>Username</span><strong id="profUsername">—</strong></div>
+          <div class="profile-row"><span>Stars</span><strong id="profStars">0</strong></div>
+          <div class="profile-row"><span>Билеты</span><strong id="profTickets">0</strong></div>
+          <div class="profile-row"><span>Рефералы</span><strong id="profRefs">0</strong></div>
+        </div>
+        <div class="section">
+          <h3>Реферальная ссылка</h3>
+          <div class="ref-box">
+            <input type="text" id="refLink" readonly />
+            <button class="btn small primary" id="copyRef">Копировать</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>Промокод</h3>
+          <div class="promo-box">
+            <input type="text" id="promoInput" placeholder="Введите промокод" />
+            <button class="btn small primary" id="activatePromo">OK</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>Вывод Stars (макс 1000)</h3>
+          <div class="withdraw-box">
+            <input type="number" id="withdrawAmount" placeholder="Сумма" min="10" max="1000" />
+            <button class="btn small primary" id="withdrawBtn">Вывод</button>
+          </div>
+        </div>
+        <div class="section">
+          <h3>История</h3>
+          <div id="historyList" class="history-list"></div>
+        </div>
+      </section>
+
+      <section class="page" id="page-chat">
+        <h2 class="page-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="1.8"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          Чат
+        </h2>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input">
+          <input type="text" id="chatInput" placeholder="Сообщение..." maxlength="500" />
+          <button class="btn small primary" id="sendChat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <section class="page" id="page-admin">
+        <h2 class="page-title">Админ</h2>
+        <div id="adminLoginForm">
+          <input type="text" id="adminLogin" placeholder="Логин" value="nightro" />
+          <input type="password" id="adminPass" placeholder="Пароль" />
+          <button class="btn primary" id="adminLoginBtn">Войти</button>
+        </div>
+        <div id="adminPanel" style="display:none">
+          <div class="stats-grid" id="adminStats"></div>
+          <div class="admin-tabs">
+            <button class="tab active" data-tab="users">Юзеры</button>
+            <button class="tab" data-tab="withdraws">Выводы</button>
+            <button class="tab" data-tab="promos">Промо</button>
+            <button class="tab" data-tab="reports">Жалобы</button>
+            <button class="tab" data-tab="raffles">Розыгрыши</button>
+          </div>
+          <div id="adminContent"></div>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-page="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <small>Главная</small>
+      </button>
+      <button class="nav-btn" data-page="tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        <small>Задания</small>
+      </button>
+      <button class="nav-btn" data-page="shop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <small>Магазин</small>
+      </button>
+      <button class="nav-btn" data-page="raffles">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 12v8a2 2 0 01-2 2H6a2 2 0 01-2-2v-8"/><path d="M12 2v10M8 8l4 4 4-4"/></svg>
+        <small>Розыгрыши</small>
+      </button>
+      <button class="nav-btn" data-page="chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        <small>Чат</small>
+      </button>
+      <button class="nav-btn" data-page="profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <small>Профиль</small>
+      </button>
+    </nav>
+  </div>
+
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <h3>Создать задание</h3>
+      <p class="hint" style="margin-bottom:10px">Награда × число выполнений спишется с баланса (эскроу). Невыполненный остаток вернётся при удалении админом.</p>
+      <input type="text" id="taskTitle" placeholder="Название" maxlength="80" />
+      <textarea id="taskDesc" placeholder="Что нужно сделать" maxlength="300"></textarea>
+      <select id="taskType">
+        <option value="subscribe">Подписаться</option>
+        <option value="like">Поставить лайк</option>
+        <option value="comment">Написать комментарий</option>
+        <option value="link">Перейти по ссылке</option>
+      </select>
+      <input type="url" id="taskUrl" placeholder="https://t.me/... или ссылка" />
+      <select id="taskRewardType">
+        <option value="tickets">Награда: билеты</option>
+        <option value="stars">Награда: Stars</option>
+      </select>
+      <div style="display:flex;gap:8px">
+        <input type="number" id="taskRewardAmount" placeholder="Награда" min="1" max="10000" />
+        <input type="number" id="taskMaxCompletions" placeholder="Кол-во выполнений" min="1" max="5000" />
+      </div>
+      <div id="taskCostHint" class="hint" style="margin-top:6px"></div>
+      <div class="modal-actions">
+        <button class="btn secondary" id="closeTaskModal">Отмена</button>
+        <button class="btn primary" id="submitTask">Создать</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="raffleModal">
+    <div class="modal-content">
+      <h3>Выставить подарок / NFT</h3>
+      <input type="text" id="raffleTitle" placeholder="Название" />
+      <textarea id="raffleDesc" placeholder="Описание"></textarea>
+      <input type="file" id="raffleImage" accept="image/*" />
+      <div class="modal-actions">
+        <button class="btn secondary" id="closeRaffleModal">Отмена</button>
+        <button class="btn primary" id="submitRaffle">Создать</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
